@@ -1,4 +1,4 @@
-name: Windows Build
+name: IPA Build
 
 on:
   # Runs on push to any of the below branches
@@ -36,7 +36,7 @@ env:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: macos-latest
 
     steps:
     - name: Checkout code
@@ -50,16 +50,27 @@ jobs:
     - name: Install flet-cli ${{ env.FLET_CLI_VERSION }}
       run: |
         python -m pip install --upgrade pip
-        pip install flet-cli==$env:FLET_CLI_VERSION
-
-    - name: Flet Build Windows
+        pip install flet-cli==$FLET_CLI_VERSION
+    - name: Flet Build IPA
       run: |
-        flet build windows --verbose --no-rich-output --build-number=$env:BUILD_NUMBER --build-version=$env:BUILD_VERSION
-
-    - name: Upload Windows Artifact
+        flet build ipa --verbose --build-number=$BUILD_NUMBER --build-version=$BUILD_VERSION --compile-app --compile-packages
+    - name: Create IPA file
+      run: |
+        # Navigate to the xcarchive directory
+        cd build/ipa/Runner.xcarchive/Products
+        
+        # Rename Applications to Payload
+        mv Applications Payload
+        
+        # Create the IPA file by zipping the Payload folder
+        zip -r app.ipa Payload
+        
+        # Move the IPA to the build directory
+        mv app.ipa ../../
+    - name: Upload IPA Artifact
       uses: actions/upload-artifact@v4.3.4
       with:
-        name: windows-build-artifact
-        path: build/windows
+        name: ipa-build-artifact
+        path: build/ipa/app.ipa
         if-no-files-found: error
         overwrite: false
